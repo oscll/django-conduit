@@ -33,10 +33,10 @@ class Comment(TimestampedModel):
     article = models.ForeignKey(
         'articles.Article', related_name='comments', on_delete=models.CASCADE
     )
-
+''' 
     author = models.ForeignKey(
         'profiles.Profile', related_name='comments', on_delete=models.CASCADE
-    )
+    ) '''
 
 
 class Tag(TimestampedModel):

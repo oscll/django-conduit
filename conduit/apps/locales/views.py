@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import (
@@ -6,41 +7,39 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Article, Comment, Tag
-from .renderers import ArticleJSONRenderer, CommentJSONRenderer
-from .serializers import ArticleSerializer, CommentSerializer, TagSerializer
+from .models import Local, Comment, Producto
+from .renderers import LocalJSONRenderer, CommentJSONRenderer, ProductoJSONRenderer
+from .serializers import LocalSerializer, CommentSerializer, ProductoSerializer
+# Create your views here.
 
 
-class ArticleViewSet(mixins.CreateModelMixin, 
+''' class LocalViewSet(viewsets.ModelViewSet):
+    queryset = Local.objects.all()
+    serializer_class = LocalSerializer '''
+
+class LocalViewSet(mixins.CreateModelMixin, 
                      mixins.ListModelMixin,
                      mixins.RetrieveModelMixin,
                      viewsets.GenericViewSet):
 
-    lookup_field = 'slug'
-    queryset = Article.objects.select_related('author', 'author__user')
+    lookup_field = 'id'
+    queryset = Local.objects.select_related('author', 'author__user')
     permission_classes = (IsAuthenticatedOrReadOnly,)
-    renderer_classes = (ArticleJSONRenderer,)
-    serializer_class = ArticleSerializer
+    renderer_classes = (LocalJSONRenderer,)
+    serializer_class = LocalSerializer
 
     def get_queryset(self):
         print("jalo")
         queryset = self.queryset
 
+        categoria = self.request.query_params.get('categoria', None)
+        if categoria is not None:
+            queryset = queryset.filter(categoria=categoria)
+            
         author = self.request.query_params.get('author', None)
         if author is not None:
             queryset = queryset.filter(author__user__username=author)
 
-        tag = self.request.query_params.get('tag', None)
-        if tag is not None:
-            queryset = queryset.filter(tags__tag=tag)
-
-        favorited_by = self.request.query_params.get('favorited', None)
-        if favorited_by is not None:
-            queryset = queryset.filter(
-                favorited_by__user__username=favorited_by
-            )
-
-        print('------------------------------------------return')
         return queryset
 
     def create(self, request):
@@ -49,7 +48,7 @@ class ArticleViewSet(mixins.CreateModelMixin,
             'author': request.user.profile,
             'request': request
         }
-        serializer_data = request.data.get('article', {})
+        serializer_data = request.data.get('local', {})
 
         serializer = self.serializer_class(
         data=serializer_data, context=serializer_context
@@ -74,12 +73,12 @@ class ArticleViewSet(mixins.CreateModelMixin,
 
         return self.get_paginated_response(serializer.data)
 
-    def retrieve(self, request, slug):
+    def retrieve(self, request, id):
         serializer_context = {'request': request}
 
         try:
-            serializer_instance = self.queryset.get(slug=slug)
-        except Article.DoesNotExist:
+            serializer_instance = self.queryset.get(id=id)
+        except Local.DoesNotExist:
             raise NotFound('An article with this slug does not exist.')
 
         serializer = self.serializer_class(
@@ -90,15 +89,15 @@ class ArticleViewSet(mixins.CreateModelMixin,
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-    def update(self, request, slug):
+    def update(self, request, id):
         serializer_context = {'request': request}
 
         try:
-            serializer_instance = self.queryset.get(slug=slug)
-        except Article.DoesNotExist:
+            serializer_instance = self.queryset.get(id=id)
+        except Local.DoesNotExist:
             raise NotFound('An article with this slug does not exist.')
             
-        serializer_data = request.data.get('article', {})
+        serializer_data = request.data.get('local', {})
 
         serializer = self.serializer_class(
             serializer_instance, 
@@ -113,11 +112,11 @@ class ArticleViewSet(mixins.CreateModelMixin,
 
 
 class CommentsListCreateAPIView(generics.ListCreateAPIView):
-    lookup_field = 'article__slug'
-    lookup_url_kwarg = 'article_slug'
+    lookup_field = 'local__id'
+    lookup_url_kwarg = 'local_id'
     permission_classes = (IsAuthenticatedOrReadOnly,)
     queryset = Comment.objects.select_related(
-        'article', 'article__author', 'article__author__user',
+        'local', 'local__author', 'local__author__user',
         'author', 'author__user'
     )
     renderer_classes = (CommentJSONRenderer,)
@@ -131,13 +130,13 @@ class CommentsListCreateAPIView(generics.ListCreateAPIView):
 
         return queryset.filter(**filters)
 
-    def create(self, request, article_slug=None):
+    def create(self, request, local_id=None):
         data = request.data.get('comment', {})
         context = {'author': request.user.profile}
 
         try:
-            context['article'] = Article.objects.get(slug=article_slug)
-        except Article.DoesNotExist:
+            context['local'] = Local.objects.get(id=local_id)
+        except Local.DoesNotExist:
             raise NotFound('An article with this slug does not exist.')
 
         serializer = self.serializer_class(data=data, context=context)
@@ -152,7 +151,7 @@ class CommentsDestroyAPIView(generics.DestroyAPIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
     queryset = Comment.objects.all()
 
-    def destroy(self, request, article_slug=None, comment_pk=None):
+    def destroy(self, request, local_id=None, comment_pk=None):
         try:
             comment = Comment.objects.get(pk=comment_pk)
         except Comment.DoesNotExist:
@@ -163,7 +162,56 @@ class CommentsDestroyAPIView(generics.DestroyAPIView):
         return Response(None, status=status.HTTP_204_NO_CONTENT)
 
 
-class ArticlesFavoriteAPIView(APIView):
+class ProductsListCreateAPIView(generics.ListCreateAPIView):
+    lookup_field = 'local__id'
+    lookup_url_kwarg = 'local_id'
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+    queryset = Producto.objects.select_related(
+        'local', 'local_id'
+    )
+    renderer_classes = (ProductoJSONRenderer,)
+    serializer_class = ProductoSerializer
+
+    def filter_queryset(self, queryset):
+        # The built-in list function calls `filter_queryset`. Since we only
+        # want comments for a specific article, this is a good place to do
+        # that filtering.
+        filters = {self.lookup_field: self.kwargs[self.lookup_url_kwarg]}
+
+        return queryset.filter(**filters)
+
+    def create(self, request, local_id=None):
+        data = request.data.get('producto', {})
+        #context = {'author': request.user.profile}
+
+        try:
+            context['local'] = Local.objects.get(id=local_id)
+        except Local.DoesNotExist:
+            raise NotFound('An article with this slug does not exist.')
+
+        serializer = self.serializer_class(data=data, context=context)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProductsDestroyAPIView(generics.DestroyAPIView):
+    lookup_url_kwarg = 'producto_pk'
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+    queryset = Producto.objects.all()
+
+    def destroy(self, request, local_id=None, producto_pk=None):
+        try:
+            producto = Producto.objects.get(pk=producto_pk)
+        except Producto.DoesNotExist:
+            raise NotFound('A comment with this ID does not exist.')
+
+        producto.delete()
+
+        return Response(None, status=status.HTTP_204_NO_CONTENT)
+
+''' class ArticlesFavoriteAPIView(APIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (ArticleJSONRenderer,)
     serializer_class = ArticleSerializer
@@ -235,3 +283,5 @@ class ArticlesFeedAPIView(generics.ListAPIView):
         )
 
         return self.get_paginated_response(serializer.data)
+ '''
+

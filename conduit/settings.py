@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'conduit.apps.articles',
+    'conduit.apps.locales',
     'conduit.apps.authentication',
     'conduit.apps.core',
     'conduit.apps.profiles',
@@ -148,5 +149,5 @@ REST_FRAMEWORK = {
         'conduit.apps.authentication.backends.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 20,
+    'PAGE_SIZE': 1,
 }
