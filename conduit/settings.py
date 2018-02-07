@@ -11,10 +11,10 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
-
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv())
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
@@ -25,7 +25,14 @@ SECRET_KEY = '2^f+3@v7$v1f8yt0!s)3-1t$)tlp+xm17=*g))_xoi&&9m#2a&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '0.0.0.0:4200',
+    'localhost:4200',
+    '0.0.0.0:8082',
+    'localhost:8082',
+    'localhost',
+    '127.0.0.1'
+]
 
 
 # Application definition
@@ -47,6 +54,7 @@ INSTALLED_APPS = [
     'conduit.apps.authentication',
     'conduit.apps.core',
     'conduit.apps.profiles',
+    'conduit.apps.contact',
 ]
 
 MIDDLEWARE = [
@@ -131,8 +139,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 CORS_ORIGIN_WHITELIST = (
-    '0.0.0.0:4000',
-    'localhost:4000',
+    '0.0.0.0:8082',
+    'localhost:8082',
+    '0.0.0.0:4200',
+    'localhost:4200',
 )
 
 # Tell Django about the custom `User` model we created. The string
@@ -151,3 +161,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 1,
 }
+
+EMAIL_BACKEND = 'sgbackend.SendGridBackend'
+SENDGRID_API_KEY = os.environ.get('SECRET_KEY_SENDGRID') 

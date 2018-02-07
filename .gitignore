@@ -96,3 +96,4 @@ share/
 lib64
 bin/
 pyvenv.cfg 
+.env

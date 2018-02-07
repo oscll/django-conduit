@@ -29,7 +29,6 @@ class LocalViewSet(mixins.CreateModelMixin,
     serializer_class = LocalSerializer
 
     def get_queryset(self):
-        print("jalo")
         queryset = self.queryset
 
         categoria = self.request.query_params.get('categoria', None)
@@ -39,7 +38,12 @@ class LocalViewSet(mixins.CreateModelMixin,
         author = self.request.query_params.get('author', None)
         if author is not None:
             queryset = queryset.filter(author__user__username=author)
-
+        
+#        get = self.request.query_params.get('get', None)
+#        if get == 'true':
+#            queryset = Local.objects.all()
+#            print(queryset)
+#
         return queryset
 
     def create(self, request):
@@ -61,9 +65,7 @@ class LocalViewSet(mixins.CreateModelMixin,
     def list(self, request):
         print('------------------------------------------list')
         serializer_context = {'request': request}
-        print(self.get_queryset())
         page = self.paginate_queryset(self.get_queryset())
-        print('page')
 
         serializer = self.serializer_class(
             page,
@@ -167,7 +169,7 @@ class ProductsListCreateAPIView(generics.ListCreateAPIView):
     lookup_url_kwarg = 'local_id'
     permission_classes = (IsAuthenticatedOrReadOnly,)
     queryset = Producto.objects.select_related(
-        'local', 'local_id'
+        'local' 
     )
     renderer_classes = (ProductoJSONRenderer,)
     serializer_class = ProductoSerializer

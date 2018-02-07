@@ -23,7 +23,6 @@ class ArticleViewSet(mixins.CreateModelMixin,
     serializer_class = ArticleSerializer
 
     def get_queryset(self):
-        print("jalo")
         queryset = self.queryset
 
         author = self.request.query_params.get('author', None)
@@ -64,7 +63,6 @@ class ArticleViewSet(mixins.CreateModelMixin,
         serializer_context = {'request': request}
         print(self.get_queryset())
         page = self.paginate_queryset(self.get_queryset())
-        print('page')
 
         serializer = self.serializer_class(
             page,
