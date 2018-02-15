@@ -5,6 +5,8 @@ from rest_framework import serializers
 from conduit.apps.profiles.serializers import ProfileSerializer
 
 from .models import User
+from django.utils.http import urlsafe_base64_encode , urlsafe_base64_decode
+from django.utils.encoding import force_bytes
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -66,14 +68,22 @@ class LoginSerializer(serializers.Serializer):
         # for a user that matches this email/password combination. Notice how
         # we pass `email` as the `username` value. Remember that, in our User
         # model, we set `USERNAME_FIELD` as `email`.
-        user = authenticate(username=email, password=password)
+        user = authenticate(email=email, password=password)
 
+
+        print('--------------------')
+        print(user)
         # If no user was found matching this email/password combination then
         # `authenticate` will return `None`. Raise an exception in this case.
         if user is None:
             raise serializers.ValidationError(
                 'A user with this email and password was not found.'
             )
+
+        #print(urlsafe_base64_encode(force_bytes(user.email)))
+        #bd64 = urlsafe_base64_encode(force_bytes(user.email))
+        #print(urlsafe_base64_decode(force_bytes(bd64)))
+        #print(user.token)
 
         # Django provides a flag on our `User` model called `is_active`. The
         # purpose of this flag to tell us whether the user has been banned

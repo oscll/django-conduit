@@ -71,12 +71,14 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampedModel):
     # will simply offer users a way to deactivate their account instead of
     # letting them delete it. That way they won't show up on the site anymore,
     # but we can still analyze the data.
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
 
     # The `is_staff` flag is expected by Django to determine who can and cannot
     # log into the Django admin site. For most users, this flag will always be
     # falsed.
     is_staff = models.BooleanField(default=False)
+
+    token_password = models.CharField(max_length=255,default='false')
 
     # More fields required by Django when specifying a custom user model.
 
@@ -130,6 +132,20 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampedModel):
         date set to 60 days into the future.
         """
         dt = datetime.now() + timedelta(days=60)
+
+        token = jwt.encode({
+            'id': self.pk,
+            'exp': int(dt.strftime('%s'))
+        }, settings.SECRET_KEY, algorithm='HS256')
+
+        return token.decode('utf-8')
+
+    def _generate_password_token(self):
+        """
+        Generates a JSON Web Token that stores this user's ID and has an expiry
+        date set to 1 day into the future.
+        """
+        dt = datetime.now() + timedelta(days=1)
 
         token = jwt.encode({
             'id': self.pk,
